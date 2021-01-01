@@ -1,0 +1,355 @@
+chapter 8, code bundle
+
+* Running tests using downloaded or built version of JTReg.
+Step 3:
+run_test.sh:
+#!/bin/sh
+export JT_JAVA=/etc/alternatives/java_sdk_1.7.0_openjdk/
+/home/user/openjdk/jtreg/bin/jtreg -jdk:$JT_JAVA -agentvm -automatic -verbose:summary -w build/jtreg/work -r build/jtreg/report hotspot/test/compiler/5091921
+
+Step 4:
+./run_test.sh 
+
+* Building jtreg from the source.
+Step 1:
+hg clone http://hg.openjdk.java.net/code-tools/jtreg
+
+Step 7:
+make.sh:
+#!/bin/sh
+export JDK15HOME= /etc/alternatives/java_sdk_1.7.0_openjdk/
+export JAVA-HELP_HOME=/home/user/openjdk/jtreg/lib/jh2.0/javahelp
+export ANTHOME=/usr/share/ant
+export JTHAR-NESS_HOME=/home/user/openjdk/jtreg/lib/jharness4.4.1
+export JUN-IT_JAR=/home/user/openjdk/jtreg/lib/junit4.5/junit-4.5.jar
+export TESTNG_HOME=/home/user/openjdk/jtreg/lib/testng-6.8
+export TESTNG_JAR=/home/user/openjdk/jtreg/lib/testng-6.8/testng-6.8.jar
+export XALANHOME=/home/user/openjdk/jtreg/lib/xalan-j_2_7_1
+make -C make
+
+Step 8:
+./make.sh
+ls -l build/images/jtreg/
+
+* Running standard set of OpenJDK tests.
+Step 1:
+run_jdk_lang_tests.sh:
+#!/bin/sh
+export JTREG_HOME=/home/user/openjdk/jtreg/build/images/jtreg/
+export JT_HOME=/home/user/openjdk/jtreg/build/images/jtreg/
+export PRODUCT_HOME=/home/user/openjdk/jdk7u_clean/build/linux-amd64/j2sdk-image/
+cd jdk/test
+make TESTDIRS=java/lang
+
+Step 2:
+./run_jdk_lang_tests.sh
+
+* Writing your own test for JTReg.
+Step 1:
+jdk/test/demo/SampleTest.java:
+/* @test
+ * @summary Test to ensure that computer wasn't moved to the past
+ * @compile SampleTimeProvider.java
+ * @run main SampleTest
+ * @run main/othervm SampleTest
+ */
+public class SampleTest {
+    public static void main(String[] args) {
+        long currentTime = new SampleTimeProvid-er().getCurrentTime();
+        if ( currentTime < 0 ) {
+            throw new RuntimeException("It can't be 1969!");
+        }
+    }
+}
+
+jdk/test/demo/SampleTimeProvider.java:
+public class SampleTimeProvider {
+    public long getCurrentTime() {
+        return System.currentTimeMillis();
+    }
+}
+
+Step 2:
+run_jtreg.sh:
+#!/bin/sh
+export JT_JAVA=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.60-2.4.7.0.fc20.x86_64
+/home/user/openjdk/jtreg/build/images/jtreg/bin/jtreg -jdk:$JT_JAVA -agentvm -automatic -verbose:summary -w build/jtreg/work -r build/jtreg/report -exclude:./jdk/test/ProblemList.txt jdk/test/demo/SampleTest.java
+
+Step 3:
+./run_jtreg.sh
+
+* Using jtreg in GUI mode.
+#!/bin/sh
+export JT_JAVA=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.60-2.4.7.0.fc20.x86_64
+/home/user/openjdk/jtreg/build/images/jtreg/bin/jtreg –g -jdk:$JT_JAVA -agentvm -automatic -verbose:summary -w build/jtreg/work -r build/jtreg/report -exclude:./jdk/test/ProblemList.txt jdk/test/
+
+* Writing TestNG tests for JTReg.
+Step 1:
+mkdir jdk/test/testng/org/demo
+
+Step 2:
+jdk/test/testng/TEST.properties:
+TestNG.dirs=.
+
+Step 5:
+MyTestNGTest.java:
+package org.mydemo;
+
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+public class MyTestNGTest {
+    @Test
+    public void testMoreNanosThanMillis() {
+        final long nanos = System.nanoTime();
+        final long millis = System.currentTimeMillis();
+        Assert.assertTrue(nanos > millis);
+    }
+}
+
+Step 6:
+run_jtreg.sh:
+#!/bin/sh
+export JT_JAVA=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.60-2.4.7.0.fc20.x86_64
+/home/user/openjdk/jtreg/build/images/jtreg/bin/jtreg -jdk:$JT_JAVA -agentvm -automatic -verbose:summary -w build/jtreg/work -r build/jtreg/report -exclude:./jdk/test/ProblemList.txt jdk/test/testng
+
+./run_jtreg.sh 
+
+* Compiling JT Harness from the source code.
+svn checkout https://svn.java.net/svn/jtharness~svn/trunk jtharness
+cd jtharness/code/build
+
+vi local.properties:
+#Please specify location of jhall.jar here - for compilation
+jhalljar = /home/user/openjdk/jtharness/lib/jh2.0/javahelp/lib/jhall.jar
+# needed only at runtime
+jhjar = /home/user/openjdk/jtharness/lib/jh2.0/javahelp/lib/jh.jar
+# location of jar with with implementation of java serial communi-cations API
+jcommjar = /home/user/openjdk/jtharness/lib/commapi/jar/comm.jar
+# location of jar with servlet API implementation
+servletjar = /home/user/openjdk/jtharness/lib/javax.servlet-api-3.1.0.jar
+# bytecode library (BCEL or ASM)
+# these are not interchangable
+bytecodelib = /home/user/openjdk/jtharness/lib/asm-3.1/lib/asm-3.1.jar:/home/user/openjdk/jtharness/lib/asm-3.1/lib/asm-commons-3.1.jar
+# JUnit Library - Version 4 currently used to compile 3 and 4 sup-port
+junitlib = /home/user/openjdk/jtharness/lib/junit-4.4.jar
+# Please specify location where the build distribution (output) will be created
+BUILD_DIR = ../JTHarness-build
+
+ant
+
+* Building and running jcstress.
+Step 1:
+hg clone http://hg.openjdk.java.net/code-tools/jcstress/ jcstress
+
+Step2:
+mvn clean install -pl tests-custom –am
+
+Step 3:
+java -jar tests-custom/target/jcstress.jar
+java -jar tests-custom/target/jcstress.jar -t ".*ByteBufferAtomicityTests.*"
+
+* Writing tests for jcstress.
+Step 1:
+CASValue.java:
+package org.openjdk.jcstress.tests;
+
+public class CASValue {
+    private int i = 0;
+    public boolean cas(int expected, int newValue) {
+        boolean res = false;
+        if (i == expected) {
+            i = newValue;
+            res = true;
+        }
+        return res;
+    }
+}
+
+Step 2:
+CASValueTests.java:
+package org.openjdk.jcstress.tests;
+
+import org.openjdk.jcstress.annotations.Actor;
+import org.openjdk.jcstress.annotations.JCStressTest;
+import org.openjdk.jcstress.annotations.State;
+import org.openjdk.jcstress.infra.results.LongResult2;
+
+public class CASValueTests {
+    @State
+    public static class S extends CASValue { }
+
+    @JCStressTest
+    public static class ValCas_ValCas {
+        @Actor public void actor1(S s, LongResult2 r) { r.r1 = s.cas(0, 5) ? 5 : 1; }
+        @Actor public void actor2(S s, LongResult2 r) { r.r2 = s.cas(0, 10) ? 10 : 2; }
+    }
+}
+
+Step 3:
+<testsuite>
+    <test name="org.openjdk.jcstress.tests.CASValueTests$ValCas_ValCas">
+        <contributed-by>Mikka Pekkanen (mik-ka.pekkanen@universe.org)</contributed-by>
+        <description>Tests correctness of CASValue CAS oper-ations.</description>
+        <case>
+            <match>[5, 2]</match>
+            <expect>ACCEPTABLE</expect>
+            <description>T1 -> T2 execution.</description>
+        </case>
+        <case>
+            <match>[1, 10]</match>
+            <expect>ACCEPTABLE</expect>
+            <description>T2 -> T1 execution.</description>
+        </case>
+        <unmatched>
+            <expect>FORBIDDEN</expect>            
+            <descrip-tion>Other cases are not expected.</description>
+        </unmatched>
+    </test>
+</testsuite>
+
+Step 4:
+mvn clean install -pl tests-custom –am
+
+Step 5:
+java -jar tests-custom/target/jcstress.jar -t ".*CASValueTests.*"
+
+Step 6:
+CASValue.java:
+public class CASValue {
+    private int i = 0;
+    public synchronized boolean cas(int expected, int newValue) {
+        boolean res = false;
+        if (i == expected) {
+            i = newValue;
+            res = true;
+        }
+        return res;
+    }
+}
+
+* Creating benchmark project using JMH
+Step 1:
+mvn archetype:generate -DinteractiveMode=false -DarchetypeGroupId=org.openjdk.jmh -DarchetypeArtifactId=jmh-java-benchmark-archetype -DgroupId=org.benchmark -DartifactId=mybenchmark -Dversion=1.0
+
+Step 3:
+BinarySearch1.java
+package org.benchmark;
+public class BinarySearch1 {
+    public static int search(long[] arr, long value) {
+        return search(arr, value, 0, arr.length-1);
+    }
+
+    private static int search(long[] arr, long value, int start, int end) {
+        if (end < start) 
+            return -1;
+
+        int imid = start + ((end - start) / 2);
+        if (arr[imid] > value)
+            return search(arr, value, start, imid-1);
+        else if (arr[imid] < value)
+            return search(arr, value, imid+1, end);
+        else
+            return imid;
+    }
+}
+
+Step 4:
+MyBenchmark.java:
+package org.benchmark;
+
+import org.openjdk.jmh.annotations.*;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+@State(value = Scope.Thread)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+public class MyBenchmark {
+    private long[] data = new long[5000];
+
+    @Setup
+    public void setup() {
+        for (int i = 0; i != data.length; ++i) {
+            data[i]=(long)(Math.random()*Long.MAX_VALUE-1);
+        }
+        Arrays.sort(data);
+    }
+
+    @Benchmark
+    public int testBinarySearch1 () {
+        return BinarySearch1.search(data, Long.MAX_VALUE);
+    }
+}
+
+Step 5:
+mvn clean install
+java -jar target/benchmarks.jar --wi=10 --i=5 --f=1 --jvmArgs=-server
+
+Step 6:
+BinarySearch2.java:
+package org.benchmark;
+public class BinarySearch2 {
+    public static int search(long[] arr, long value) {
+        return search(arr, value, 0, arr.length-1);
+    }
+    private static int search(long[] arr, long value, int start, int end) {
+        while (end >= start) {
+            int imid = start + ((end - start) / 2);
+            if(arr[imid] == value)
+                return imid;
+            else if (arr[imid] < value)
+                start = imid + 1;
+            else
+                end = imid - 1;
+        }
+        return -1;
+    }
+}
+
+Step 7:
+MyBenchmark.java:
+package org.benchmark;
+
+import org.openjdk.jmh.annotations.*;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+@State(value = Scope.Group)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+public class MyBenchmark {
+    private long[] data = new long[500000];
+
+    @Setup
+    public void setup() {
+        for (int i = 0; i != data.length; ++i) {
+            data[i] = (long)(Math.random() * (Long.MAX_VALUE-1));
+        }
+        Arrays.sort(data);
+    }
+
+    @Benchmark
+    @Group(value = "bsearch")
+    public int testBinarySearch1() {
+        return BinarySearch1.search(data, Long.MAX_VALUE);
+    }
+
+    @Benchmark
+    @Group(value = "bsearch")
+    public int testBinarySearch2() {
+        return BinarySearch2.search(data, Long.MAX_VALUE);
+    }
+}
+
+
+Step 8:
+mvn clean install
+java -jar target/benchmarks.jar --wi=10 --i=5 --f=1 --jvmArgs=-server
+
+* Downloading source and compiling JMH
+Step 1:
+hg clone http://hg.openjdk.java.net/code-tools/jmh/ jmh
+
+Step 2:
+mvn clean install –DskipTests
